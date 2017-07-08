@@ -11,6 +11,8 @@
 
 import socket
 import argparse
+import sys
+from validate_ip import validate_ip
 
 
 def get_banner(ip, port, timeout):
@@ -27,37 +29,28 @@ def get_banner(ip, port, timeout):
         return
 
 
-def main(default_ip='10.0.0.', default_range=(1, 10), timeout=0.5, verbose=False):
-    ports = [21, 22, 25, 80, 110, 443]  # default ports (a)
-    ip_range = range(default_range[0], default_range[1])
+def main(ip, timeout=0.5):
+    ports = [21, 22, 25, 53, 79, 80, 105, 106, 110, 135, 143, 443, 3306, 8005, 8009, 8080, 14147, 33389]  # default ports (a)
     result = []
 
     if timeout == None:
         timeout = 0.5
 
-    print('IP block: {}{} - {}'.format(args.ip, default_range[0], default_range[1]))
-    if not verbose:
-        print('working...')
+    print('Working...')
+    for port in ports:
+        banner = get_banner(ip, port, timeout)
 
-    for r in ip_range:
-        ip = default_ip + str(r)  # some local ip (a) ip to check
-        for port in ports:
-            banner = get_banner(ip, port, timeout)
+        if banner:
+            try:
+                result.append("[{}:{}] {}".format(ip, port, banner.decode().strip()))
+            except Exception as ex:
+                result.append("[{}:{}] {}".format(ip, port, banner.strip()))
 
-            if verbose:
-                print("Trying {} at {}".format(port, ip), end=' ')
-
-            if banner:
-                result.append("{} {} {}".format(ip, port, banner.decode('utf8').strip()))
-                if not verbose:
-                    print("IP: {} PORT: {}".format(ip, port), end=' ')
-
-                print(banner.decode('utf8').strip())
-            if verbose:
-                print()
+    for banner in result:
+        print(banner)
 
     print("Done! Total banners found : {} ".format(len(result)))
-    print("Saving results in \'grabbed_banners_txt\'")
+    print("Saving results in \'grabbed_banners.txt\'")
 
     # save results in file
     try:
@@ -71,30 +64,14 @@ def main(default_ip='10.0.0.', default_range=(1, 10), timeout=0.5, verbose=False
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-ip", help="IP address to check. (First three octets with dot at the end) ex: 192.168.10. ")
-    parser.add_argument("-rs", help="first ip, default 1", type=int)
-    parser.add_argument("-re", help="last ip, default 50", type=int)
+    parser.add_argument("ip", help="IP address to check")
     parser.add_argument("-t", help="timeout value, default 0.5 sec", type=float)
-    parser.add_argument("-v", help="verbose", action="store_true")
     args = parser.parse_args()
 
     if args.ip:
-        last_octet = []
-        if args.rs:
-            last_octet.append(args.rs)
+        if validate_ip(args.ip):
+            print('IP address is correct.')
+            main(ip=args.ip, timeout=args.t)
         else:
-            last_octet.append(1)
-
-        if args.re and args.rs and args.rs > args.re:
-            args.re = args.rs + 1
-            last_octet.append(args.re)
-        elif args.re:
-            last_octet.append(args.re)
-        else:
-            last_octet.append(args.re)
-
-        ip_range = tuple(last_octet)
-        main(args.ip, default_range=ip_range, timeout=args.t, verbose=args.v)
-    else:
-        print('There is no optional argument, using default values.')
-        main()
+            print('IP address is incorrect.')
+            sys.exit(1)
