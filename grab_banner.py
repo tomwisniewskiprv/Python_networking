@@ -30,7 +30,8 @@ def get_banner(ip, port, timeout):
 
 
 def main(ip, timeout=0.5):
-    ports = [21, 22, 25, 53, 79, 80, 105, 106, 110, 135, 143, 443, 3306, 8005, 8009, 8080, 14147, 33389]  # default ports (a)
+    ports = [21, 22, 25, 53, 79, 80, 105, 106, 110, 135, 143, 443, 3306, 8000, 8001, 8002, 8005, 8009, 8080, 14147,
+             33389]  # default ports (a)
     result = []
 
     if timeout == None:

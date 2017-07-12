@@ -1,0 +1,18 @@
+21  ftp
+22  SSH
+23  Telnet
+25  SMTP
+53  domain
+80  HTTP
+110 POP3
+137 NetBios
+143 IMAP
+443 HTTPS
+8000
+8001
+8002
+8003
+8005 Tomcat
+8009 Tomcat
+8080
+33389 Apache
