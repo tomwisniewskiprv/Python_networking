@@ -32,29 +32,41 @@ def scan_TCP_full_connection(address, port):
 def parse_command_line():
     parser = argparse.ArgumentParser(description="Simple port scanner (remote and local)")
     parser.add_argument("ip", help="IP address")
+    parser.add_argument("-p",
+                        help="port number or ports list with double quotation and space separated ex:\"25 80 1337\"",
+                        type=str)
     parser.add_argument("-v", help="verbose", action="store_true")
 
     args = parser.parse_args()
 
     if validate_ip(args.ip):
-        return args.ip, args.v
+        if args.p:
+            ports_lst = args.p.strip().split(" ")
+            return args.ip, args.v, ports_lst
+        else:
+            return args.ip, args.v, None
+
     else:
         print("Wrong IP address. Quiting.")
         sys.exit(1)
 
 
 def main():
-    ports = [21, 22, 25, 53, 79, 80, 105, 106, 110, 135, 137, 143, 443, 3306, 8000, 8001, 8002, 8005, 8009, 8080, 14147,
-             33389]  # default ports
+    ports_default = [21, 22, 25, 53, 79, 80, 105, 106, 110, 135, 137, 143, 443, 3306, 8000, 8001, 8002, 8005, 8009,
+                     8080, 14147,
+                     33389]  # default ports
 
-    ip, verbose = parse_command_line()
+    ip, verbose, ports = parse_command_line()
+
+    if ports is None:
+        ports = ports_default
+        print("Using default ports list.")
 
     t0 = datetime.now()
     print('Scanning. Ctrl + c , ^c  to stop.')
     try:
-
         for port in ports:
-            if scan_TCP_full_connection(ip, port):
+            if scan_TCP_full_connection(ip, int(port)):
                 print('[{}:{}] is open'.format(ip, port))
             elif verbose:
                 print('[{}:{}] is closed'.format(ip, port))
