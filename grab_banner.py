@@ -5,8 +5,6 @@
 
 """
     Simple banner grabber
-    # TODO:
-    port list
 """
 
 import socket
@@ -15,8 +13,8 @@ import sys
 from validate_ip import validate_ip
 
 
-def get_banner(ip, port, timeout):
-    """ Try to grab """
+def get_service_banner(ip, port, timeout):
+    """ Try to get service banner """
     try:
         socket.setdefaulttimeout(timeout)  # default timeout (a)
         sock = socket.socket()
@@ -25,6 +23,8 @@ def get_banner(ip, port, timeout):
 
         if banner:
             return banner
+
+        sock.close()
     except:
         return
 
@@ -39,7 +39,7 @@ def main(ip, timeout=0.5):
 
     print('Working...')
     for port in ports:
-        banner = get_banner(ip, port, timeout)
+        banner = get_service_banner(ip, port, timeout)
 
         if banner:
             try:
