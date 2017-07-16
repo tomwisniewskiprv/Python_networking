@@ -9,11 +9,14 @@
 import socket
 import threading
 import os, sys, platform
-import subprocess
 import argparse
+from datetime import datetime
+from collections import OrderedDict
 
 from validate_ip import validate_ip
 
+screenLock = threading.Semaphore(value=1)  # lock screen , only 1 thread can print output to screen at any given time
+hosts_up = OrderedDict()
 
 class scan_thread(threading.Thread):
     def __init__(self):
@@ -24,9 +27,8 @@ class scan_thread(threading.Thread):
 
 
 class ping_thread(threading.Thread):
-    def __init__(self, ip, hosts):
+    def __init__(self, hosts):
         threading.Thread.__init__(self)
-        self.ip = ip
         self.hosts = hosts
         if len(hosts) == 1:
             self.only_one_host = True
@@ -58,18 +60,21 @@ class ping_thread(threading.Thread):
         :param hosts:
         :return: list of machines which responded to ICMP.
         """
-        hosts_live = []
+        self.hosts_up = []
         if self.only_one_host:
-            if self.ping(self.ip):
-                hosts_live.append(self.ip)
+            if self.ping(self.hosts[0]):
+                self.hosts_up.append(self.hosts[0])
 
         else:
             for host in hosts:
-                print("sanity check")
                 if self.ping(host):
-                    hosts_live.append(host)
+                    self.hosts_up.append(host)
+                    # screenLock.acquire()
+                    # print(host)
+                    hosts_up[host] = "up"
+                    # screenLock.release()
 
-        return hosts_live
+        return self.hosts_up
 
 
 def list_hosts(ip, end):
@@ -125,7 +130,7 @@ def main(arguments=None):
                 # calculate range of scan
                 ip_range = args.e
                 host = args.IP
-                print("IP: {} range: {} <-> {} ".format(host, last_number, ip_range))
+                print("IP: {}-{} ".format(host, ip_range))
                 ip_range += 1
                 scan_targets = ip_range - last_number
 
@@ -145,32 +150,37 @@ def main(arguments=None):
     threads = []
 
     if only_one_host:
-        print("Scanning host.")
-        thread = ping_thread(host, [])
+        print("Scanning single host.")
+        thread = ping_thread([host])
         if thread.ping_sweep():
             print("{} is up.".format(host))
         else:
             print("{} does not respond for ICMP.".format(host))
     else:
         print("Scanning hosts. It will take a while...")
-        hosts = list_hosts(host, ip_range)
+        hosts = list_hosts(host, ip_range)  # create list of hosts to scan
+        nr_of_machines_per_thread = 10
 
-        # TODO count how many threads are needed and create appropriate IP blocks
-        total_threads = scan_targets // 20  # one thread for 20 IPs
-
+        t0 = datetime.now()
         try:
-            thread = ping_thread(host, hosts)
-            thread.start()
-            threads.append(thread)
+            for x in range(0, len(hosts), nr_of_machines_per_thread):
+                thread = ping_thread(hosts[x:x + nr_of_machines_per_thread])
+                thread.start()
+                threads.append(thread)
         except KeyboardInterrupt:
             print("Interrupted.")
         except Exception as ex:
             print(ex)
 
-        print("\tNumber of active threads {}".format(threading.active_count()))
+        print("Number of active threads: {}".format(threading.active_count()))
         for t in threads:
             t.join()
-        print("\tNumber of active threads {}".format(threading.active_count()))
+
+        for h in sorted(hosts_up.keys()):
+            print("{} is up.".format(h))
+
+        t1 = datetime.now()
+        print("Time: {}".format(t1 - t0))
 
 
 if __name__ == "__main__":
