@@ -16,14 +16,34 @@ from collections import OrderedDict
 from validate_ip import validate_ip
 
 screenLock = threading.Semaphore(value=1)  # lock screen , only 1 thread can print output to screen at any given time
-hosts_up = OrderedDict()
+hosts_up = OrderedDict()  # results of scan/ping
+
 
 class scan_thread(threading.Thread):
-    def __init__(self):
+    def __init__(self, hosts):
         threading.Thread.__init__(self)
+        self.hosts = hosts
 
     def run(self):
         pass
+
+    def scan_TCP_full_connection(self, address, port):
+        """ Scan host """
+        try:
+            socket.setdefaulttimeout(0.5)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex((address, port))
+
+            sock.close()
+            if result == 0:  # no error
+                return 1
+            else:
+                return 0
+        except socket.error as err:
+            print(err)
+        except KeyboardInterrupt:
+            print("Interrupted.")
+            sys.exit()
 
 
 class ping_thread(threading.Thread):
@@ -105,10 +125,21 @@ def check_op_sys():
         sys.exit()
 
 
+def scan():
+    print("scan")
+    pass
+
+
+def ping():
+    print("ping")
+    pass
+
+
 def main(arguments=None):
     help_e_arg = "Last number from IP range to scan. Default is limited to first host's IP, so it will scan only one machine."
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("-m", type=str, help="-p|-s - ping | scan")
     parser.add_argument("IP", type=str)
     parser.add_argument("-e", type=int, help=help_e_arg)
     args = parser.parse_args()
@@ -146,6 +177,10 @@ def main(arguments=None):
         print("Parameter {} is not valid IP address. Quiting.".format(args.IP))
         sys.exit()
 
+    # execute function based on user input
+    mode = {'s': scan, 'p': ping}
+    mode[args.m]()
+
     # execute ping sweep, threads
     threads = []
 
@@ -181,6 +216,7 @@ def main(arguments=None):
 
         t1 = datetime.now()
         print("Time: {}".format(t1 - t0))
+        # end of ping sweep
 
 
 if __name__ == "__main__":

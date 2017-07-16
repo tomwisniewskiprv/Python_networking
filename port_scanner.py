@@ -18,15 +18,21 @@ from validate_ip import validate_ip
 
 def scan_TCP_full_connection(address, port):
     """ Scan host """
-    socket.setdefaulttimeout(0.5)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = sock.connect_ex((address, port))
+    try:
+        socket.setdefaulttimeout(0.5)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = sock.connect_ex((address, port))
 
-    sock.close()
-    if result == 0:  # no error
-        return 1
-    else:
-        return 0
+        sock.close()
+        if result == 0:  # no error
+            return 1
+        else:
+            return 0
+    except socket.error as err:
+        print(err)
+    except KeyboardInterrupt:
+        print("Interrupted.")
+        sys.exit()
 
 
 def parse_command_line():
