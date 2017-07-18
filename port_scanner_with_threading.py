@@ -50,8 +50,7 @@ class scan_thread(threading.Thread):
         for host in self.hosts:
             for port in self.ports:
                 if self.scan_TCP_full_connection(host, port):
-                    print(host, port)
-
+                    print(host, port, socket.getservbyport(port))
 
 
 class ping_thread(threading.Thread):
@@ -136,7 +135,11 @@ def check_op_sys():
 
 def scan(host, ip_range, ports):
     """ execute port scan """
-    port_lst = [20, 21, 25, 80, 443, 137]
+    if ports:
+        port_lst = ports
+    else:
+        port_lst = [20, 21, 25, 80, 443, 137]
+
     threads = []
 
     print("Scanning hosts. It will take a while...")  # sanity check
@@ -163,7 +166,8 @@ def scan(host, ip_range, ports):
 
     t1 = datetime.now()
     print("Time: {}".format(t1 - t0))
-    # end of ping sweep
+    # end of scan sweep
+
 
 def ping(host, ip_range, *args):
     """ execute ping sweep, create threads """
@@ -238,9 +242,6 @@ def main(arguments=None):
             print("Parameter -e {} is not in range 0-255. Quiting.".format(args.e))
             sys.exit()
 
-        elif args.m == "s" and args.p:
-            ports = args.p.strip().split(" ")
-
         else:
             host = args.IP
             ip_range = int(host.split(".")[3]) + 1
@@ -248,6 +249,11 @@ def main(arguments=None):
     else:
         print("Parameter {} is not valid IP address. Quiting.".format(args.IP))
         sys.exit()
+
+    # if mode scan and there are other than default ports
+    if args.m == "s" and args.p:
+        ports = args.p.strip().split(" ")
+        ports = [int(port) for port in ports]
 
     # execute function based on user input
     mode = {'s': scan, 'p': ping, 't': traceroute}
