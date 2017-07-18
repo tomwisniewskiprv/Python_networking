@@ -20,12 +20,13 @@ hosts_up = OrderedDict()  # results of scan/ping
 
 
 class scan_thread(threading.Thread):
-    def __init__(self, hosts):
+    def __init__(self, hosts, ports):
         threading.Thread.__init__(self)
         self.hosts = hosts
+        self.ports = ports
 
     def run(self):
-        pass
+        self.scan_sweep()
 
     def scan_TCP_full_connection(self, address, port):
         """ Scan host """
@@ -44,6 +45,13 @@ class scan_thread(threading.Thread):
         except KeyboardInterrupt:
             print("Interrupted.")
             sys.exit()
+
+    def scan_sweep(self):
+        for host in self.hosts:
+            for port in self.ports:
+                if self.scan_TCP_full_connection(host, port):
+                    print(host, port)
+
 
 
 class ping_thread(threading.Thread):
@@ -84,6 +92,7 @@ class ping_thread(threading.Thread):
         if self.only_one_host:
             if self.ping(self.hosts[0]):
                 self.hosts_up.append(self.hosts[0])
+                hosts_up[self.hosts[0]] = "up"
 
         else:
             for host in hosts:
@@ -125,13 +134,70 @@ def check_op_sys():
         sys.exit()
 
 
-def scan():
-    print("scan")
-    pass
+def scan(host, ip_range, ports):
+    """ execute port scan """
+    port_lst = [20, 21, 25, 80, 443, 137]
+    threads = []
+
+    print("Scanning hosts. It will take a while...")  # sanity check
+    hosts = list_hosts(host, ip_range)  # create list of hosts to scan
+    nr_of_machines_per_thread = 10
+
+    t0 = datetime.now()
+    try:
+        for x in range(0, len(hosts), nr_of_machines_per_thread):
+            thread = scan_thread(hosts[x:x + nr_of_machines_per_thread], port_lst)
+            thread.start()
+            threads.append(thread)
+    except KeyboardInterrupt:
+        print("Interrupted.")
+    except Exception as ex:
+        print(ex)
+
+    print("Number of active threads: {}".format(threading.active_count()))
+    for t in threads:
+        t.join()
+
+    for h in sorted(hosts_up.keys()):
+        print("{} is up.".format(h))
+
+    t1 = datetime.now()
+    print("Time: {}".format(t1 - t0))
+    # end of ping sweep
+
+def ping(host, ip_range, *args):
+    """ execute ping sweep, create threads """
+    threads = []
+
+    print("Pinging hosts. It will take a while...")  # sanity check
+    hosts = list_hosts(host, ip_range)  # create list of hosts to scan
+    nr_of_machines_per_thread = 10
+
+    t0 = datetime.now()
+    try:
+        for x in range(0, len(hosts), nr_of_machines_per_thread):
+            thread = ping_thread(hosts[x:x + nr_of_machines_per_thread])
+            thread.start()
+            threads.append(thread)
+    except KeyboardInterrupt:
+        print("Interrupted.")
+    except Exception as ex:
+        print(ex)
+
+    print("Number of active threads: {}".format(threading.active_count()))
+    for t in threads:
+        t.join()
+
+    for h in sorted(hosts_up.keys()):
+        print("{} is up.".format(h))
+
+    t1 = datetime.now()
+    print("Time: {}".format(t1 - t0))
+    # end of ping sweep
 
 
-def ping():
-    print("ping")
+def traceroute(host, *args):
+    print("trace route")
     pass
 
 
@@ -139,14 +205,17 @@ def main(arguments=None):
     help_e_arg = "Last number from IP range to scan. Default is limited to first host's IP, so it will scan only one machine."
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", type=str, help="-p|-s - ping | scan")
-    parser.add_argument("IP", type=str)
+    parser.add_argument("-m", type=str, help="p|s - ping | scan")
+    parser.add_argument("IP", type=str, help="ip address")
     parser.add_argument("-e", type=int, help=help_e_arg)
+    parser.add_argument("-p",
+                        help="port number or ports list with double quotation and space separated ex:\"25 80 1337\"",
+                        type=str)
     args = parser.parse_args()
 
     last_number = 0  # last number in IP address range
-    ip_range = 0
-    only_one_host = False
+    ip_range = 0  # last machine number in range
+    ports = []
     host = None
     scan_targets = 0
 
@@ -169,54 +238,20 @@ def main(arguments=None):
             print("Parameter -e {} is not in range 0-255. Quiting.".format(args.e))
             sys.exit()
 
+        elif args.m == "s" and args.p:
+            ports = args.p.strip().split(" ")
+
         else:
-            only_one_host = True  # only one host
             host = args.IP
+            ip_range = int(host.split(".")[3]) + 1
 
     else:
         print("Parameter {} is not valid IP address. Quiting.".format(args.IP))
         sys.exit()
 
     # execute function based on user input
-    mode = {'s': scan, 'p': ping}
-    mode[args.m]()
-
-    # execute ping sweep, threads
-    threads = []
-
-    if only_one_host:
-        print("Scanning single host.")
-        thread = ping_thread([host])
-        if thread.ping_sweep():
-            print("{} is up.".format(host))
-        else:
-            print("{} does not respond for ICMP.".format(host))
-    else:
-        print("Scanning hosts. It will take a while...")
-        hosts = list_hosts(host, ip_range)  # create list of hosts to scan
-        nr_of_machines_per_thread = 10
-
-        t0 = datetime.now()
-        try:
-            for x in range(0, len(hosts), nr_of_machines_per_thread):
-                thread = ping_thread(hosts[x:x + nr_of_machines_per_thread])
-                thread.start()
-                threads.append(thread)
-        except KeyboardInterrupt:
-            print("Interrupted.")
-        except Exception as ex:
-            print(ex)
-
-        print("Number of active threads: {}".format(threading.active_count()))
-        for t in threads:
-            t.join()
-
-        for h in sorted(hosts_up.keys()):
-            print("{} is up.".format(h))
-
-        t1 = datetime.now()
-        print("Time: {}".format(t1 - t0))
-        # end of ping sweep
+    mode = {'s': scan, 'p': ping, 't': traceroute}
+    mode[args.m](host, ip_range, ports)
 
 
 if __name__ == "__main__":
