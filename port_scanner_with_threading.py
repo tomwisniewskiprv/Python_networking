@@ -200,8 +200,7 @@ def ping(host, ip_range, *args):
     # end of ping sweep
 
 
-def traceroute(host, *args):
-    print("trace route")
+def traceroute():
     pass
 
 
