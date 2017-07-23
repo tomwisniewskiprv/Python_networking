@@ -40,7 +40,6 @@ def server_loop():
         if not received:
             break
         else:
-            print(type(received), type(data))
             data += received
 
         # execute command
@@ -65,7 +64,7 @@ def client_connection():
         while True:
             cmd = "dir".encode("ascii") # example command
             client.sendall(cmd)
-            data = client.recv(1024)
+            data = client.recv(2048)
             print("{}".format(data.decode('ISO 8859-13'))) # decode the answer
             break
     except KeyboardInterrupt as key:
