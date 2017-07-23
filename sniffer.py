@@ -1,7 +1,16 @@
+# -*- coding: utf-8 -*-
+# Python 3.6
+# Python_networking | sniffer
+# 23.07.2017 Tomasz Wisniewski
+
 import socket
-import os, platform
+import os, sys, platform
 import struct
 from ctypes import *
+import binascii
+
+from IPv4_Header import IPv4_Header
+from IPv4_Header import ICMP
 
 """
     Simple packet sniffer, based on Black Hat Python.
@@ -9,40 +18,6 @@ from ctypes import *
 
 # host to listen on
 host = "10.0.0.64"  # your IP goes here
-
-
-class IP_header(Structure):
-    _fields_ = [
-        ("ihl", c_ubyte, 4),
-        ("version", c_ubyte, 4),
-        ("tos", c_ubyte),
-        ("len", c_ushort),
-        ("id", c_ushort),
-        ("offset", c_ushort),
-        ("ttl", c_ubyte),
-        ("protocol_num", c_ubyte),
-        ("sum", c_ushort),
-        ("src", c_ulong),
-        ("dst", c_ulong)
-    ]
-
-    def __new__(self, socket_buffer=None):
-        return self.from_buffer_copy(socket_buffer)
-
-    def __init__(self, socket_buffer=None):
-
-        # map protocol constants to their names
-        self.protocol_map = {1: "ICMP", 2: "IGMP", 6: "TCP", 17: "UDP"}
-
-        # human readable IP addresses
-        self.src_address = socket.inet_ntoa(struct.pack("<L", self.src))
-        self.dst_address = socket.inet_ntoa(struct.pack("<L", self.dst))
-
-        # human readable protocol
-        try:
-            self.protocol = self.protocol_map[self.protocol_num]
-        except:
-            self.protocol = str(self.protocol_num)
 
 
 def run():
@@ -53,8 +28,13 @@ def run():
         socket_protocol = socket.IPPROTO_ICMP
 
     # create a raw socket and bind it to the public interface
-    sniffer = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket_protocol)
-    sniffer.bind((host, 0))
+    sniffer = None
+    try:
+        sniffer = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket_protocol)
+        sniffer.bind((host, 0))
+    except:
+        print("Script requires higher privileges to run.")
+        sys.exit(1)
 
     # include IP headers in the capture
     sniffer.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
@@ -68,8 +48,19 @@ def run():
             raw_buffer = sniffer.recvfrom(65565)[0]  # read in a single packet
 
             # create an IP header from the first 20 bytes of the buffer
-            ip_header = IP_header(raw_buffer[0:20])
-            print("Protocol: {} {} -> {}".format(ip_header.protocol, ip_header.src_address, ip_header.dst_address))
+            # 20 Bytes == 160 bites == IP header
+            # 96b  12B   source address
+            # 128b 16B   destination address
+            ip_header = IPv4_Header(raw_buffer[0:20])
+
+            print("Protocol: {:4} {:15} -> {:15} TTL: {}".format(ip_header.protocol, ip_header.src_address,
+                                                                 ip_header.dst_address, ip_header.ttl))
+            if ip_header.protocol == "ICMP":
+                start_icmp = ip_header.ihl * 4  # 20b
+                raw_icmp = raw_buffer[start_icmp:start_icmp + sizeof(ICMP)]
+                icmp_header = ICMP(raw_icmp)
+                print("{:10}ICMP: type: {} code: {} result: {}".format(" ",icmp_header.type, icmp_header.code,
+                                                               icmp_header.show_results()))
 
     except KeyboardInterrupt:
         # on Windows turn off promiscuous mode
@@ -78,6 +69,7 @@ def run():
 
     finally:
         sniffer.close()
+        sys.exit()
 
 
 if __name__ == '__main__':
