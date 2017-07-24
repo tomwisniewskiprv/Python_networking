@@ -5,9 +5,7 @@
 
 import socket
 import os, sys, platform
-import struct
 from ctypes import *
-import binascii
 
 from IPv4_Header import IPv4_Header
 from IPv4_Header import ICMP
@@ -21,6 +19,7 @@ host = "10.0.0.64"  # your IP goes here
 
 
 def run():
+    print("Ctrl + C to stop")
     op_sys = platform.system()
     if op_sys == "Windows":
         socket_protocol = socket.IPPROTO_IP
@@ -56,7 +55,7 @@ def run():
             print("Protocol: {:4} {:15} -> {:15} TTL: {}".format(ip_header.protocol, ip_header.src_address,
                                                                  ip_header.dst_address, ip_header.ttl))
             if ip_header.protocol == "ICMP":
-                start_icmp = ip_header.ihl * 4  # 20b
+                start_icmp = ip_header.ihl * 4  # Calculate start of ICMP , 20b
                 raw_icmp = raw_buffer[start_icmp:start_icmp + sizeof(ICMP)]
                 icmp_header = ICMP(raw_icmp)
                 print("{:10}ICMP: type: {} code: {} result: {}".format(" ",icmp_header.type, icmp_header.code,
@@ -64,6 +63,7 @@ def run():
 
     except KeyboardInterrupt:
         # on Windows turn off promiscuous mode
+        # Ctrl + C to stop
         if op_sys == "Windows":
             sniffer.ioctl(socket.SIO_RCVALL, socket.RCVALL_OFF)
 

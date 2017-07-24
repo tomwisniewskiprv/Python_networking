@@ -9,6 +9,7 @@ import struct
 
 
 class IPv4_Header(Structure):
+    """ Raw IPv4 header structure """
     _fields_ = [
         ("ihl", c_ubyte, 4),
         ("version", c_ubyte, 4),
@@ -38,12 +39,13 @@ class IPv4_Header(Structure):
 
         # human readable protocol
         try:
-            self.protocol = self.protocol_map[self.protocol_num]
+            self.protocol = self.protocol_map.get(self.protocol_num)
         except:
             self.protocol = str(self.protocol_num)
 
 
 class ICMP(Structure):
+    """ Raw Internet Control Message Protocol structure """
     _fields_ = [
         ("type", c_ubyte),
         ("code", c_ubyte),
@@ -58,7 +60,7 @@ class ICMP(Structure):
     def __init__(self, socket_buffer, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.types = {0: "Echo Reply", 8: "Echo Request", 3: "Destination Unreachable"}
+        self.types = {0: "Echo Reply", 8: "Echo Request", 3: "Destination Unreachable", 11: "Time Exceeded"}
 
     def show_results(self):
-        return self.types[self.type]
+        return self.types.get(self.type)
