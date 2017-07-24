@@ -200,10 +200,6 @@ def ping(host, ip_range, *args):
     # end of ping sweep
 
 
-def traceroute():
-    pass
-
-
 def main(arguments=None):
     help_e_arg = "Last number from IP range to scan. Default is limited to first host's IP, so it will scan only one machine."
 
@@ -255,7 +251,7 @@ def main(arguments=None):
         ports = [int(port) for port in ports]
 
     # execute function based on user input
-    mode = {'s': scan, 'p': ping, 't': traceroute}
+    mode = {'s': scan, 'p': ping}
     mode[args.m](host, ip_range, ports)
 
 

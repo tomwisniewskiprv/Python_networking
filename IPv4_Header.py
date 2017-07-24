@@ -3,6 +3,10 @@
 # Python_networking | IPv4_Header
 # 23.07.2017 Tomasz Wisniewski
 
+"""
+    Module for low level binary data extractions from IPv4 packet headers, including ICMP.
+"""
+
 from ctypes import *
 import socket
 import struct
