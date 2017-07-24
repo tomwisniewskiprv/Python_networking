@@ -8,7 +8,7 @@ from IPv4_Header import *
 """
     Simple Traceroute script with ICMP support.
     TODO:
-    get host name -> IP
+    TTL calibrations
 """
 
 
@@ -30,16 +30,16 @@ class Traceroute(object):
         print('Tracing to {} [{}], {} hops max'.format(self.dst, self.ip_dst, self.hops))
 
         while True:
-            startTimer = time.time()
+            timer_start = time.time()
             receiver = self.create_receiver()
             sender = self.create_sender()
             sender.sendto(b'', (self.ip_dst, self.port))
 
             addr = None
-            endTimer = None
+            timer_end = None
             try:
                 data, addr = receiver.recvfrom(1024)
-                endTimer = time.time()
+                timer_end = time.time()
 
                 # print source and destination of IP
                 ip_header = IPv4_Header(data[:20])
@@ -48,6 +48,8 @@ class Traceroute(object):
                 start_icmp = ip_header.ihl * 4  # Calculate start of ICMP
                 icmp_header = ICMP(data[start_icmp:start_icmp + sizeof(ICMP)])
                 print("\t type:{} code:{} {}".format(icmp_header.type, icmp_header.code, icmp_header.show_results()))
+
+                # type 11 , code 0 is correct answer from server.
 
             except socket.error as e:
                 # Handling failed connection.
@@ -58,10 +60,9 @@ class Traceroute(object):
                 sender.close()
 
             if addr:
-                timeToDst = round((endTimer - startTimer) * 1000, 2)
-                print('{:<4} {} {} ms'.format(self.ttl, addr[0], timeToDst))
+                time_to_dst = round((timer_end - timer_start) * 1000, 2)
+                print('{:<4} {} {} ms'.format(self.ttl, addr[0], time_to_dst))
 
-                print(type(addr[0]), addr)
                 if addr[0] == self.ip_dst:
                     print("Destination reached.")
                     break
@@ -99,6 +100,6 @@ class Traceroute(object):
         s.setsockopt(socket.SOL_IP, socket.IP_TTL, self.ttl)
         return s
 
-
-traceroute = Traceroute("www.onet.pl", hops=15)
-traceroute.run()
+if __name__ == '__main__':
+    traceroute = Traceroute("www.onet.pl", hops=15)
+    traceroute.run()
