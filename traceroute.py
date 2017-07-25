@@ -42,7 +42,7 @@ class Traceroute(object):
                 timer_end = time.time()
 
                 # print source and destination of IP
-                ip_header = IPv4_Header(data[:20])
+                ip_header = IPv4_Header(data[:20])  # first 20 Bytes
                 print("\t {} -> {}".format(ip_header.src_address, ip_header.dst_address))
 
                 start_icmp = ip_header.ihl * 4  # Calculate start of ICMP
@@ -53,7 +53,6 @@ class Traceroute(object):
 
             except socket.error as e:
                 # Handling failed connection.
-                # print(e)
                 pass
             finally:
                 receiver.close()

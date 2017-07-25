@@ -142,7 +142,7 @@ def scan(host, ip_range, ports):
 
     threads = []
 
-    print("Scanning hosts. It will take a while...")  # sanity check
+    print("Scanning hosts. It will take a while...")
     hosts = list_hosts(host, ip_range)  # create list of hosts to scan
     nr_of_machines_per_thread = 10
 
@@ -173,7 +173,7 @@ def ping(host, ip_range, *args):
     """ execute ping sweep, create threads """
     threads = []
 
-    print("Pinging hosts. It will take a while...")  # sanity check
+    print("Pinging hosts. It will take a while...")
     hosts = list_hosts(host, ip_range)  # create list of hosts to scan
     nr_of_machines_per_thread = 10
 
