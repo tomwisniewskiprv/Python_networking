@@ -8,7 +8,8 @@
 Remote command shell for Windows (for now).
 Alpha stage.
 TODO:
-    - work on coding both sides
+    - add exit exit route
+    - work on cd. it seems like wd server side always starts in the same directory. maybe add variable to store path.
 """
 
 import socket
@@ -65,6 +66,9 @@ def server_loop():
 
             # execute command
             cmd = received.decode(encoding)
+            if cmd == "stop":
+                break
+
             output = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             # send back the results
             if not output.stdout:
