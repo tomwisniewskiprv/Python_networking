@@ -14,10 +14,19 @@ TODO:
 import socket
 import subprocess, os, sys
 import argparse
+import locale
 
 remote_server = "localhost"
 port = 6666
-coder = "latin1"
+# encoding = "utf-8"
+# encoding = "windows-1250"
+
+# Configure locale from the user's environment settings.
+locale.setlocale(locale.LC_ALL, '')
+
+# Wrap stdout with an encoding-aware writer.
+lang, encoding = locale.getdefaultlocale()
+
 
 def create_server():
     try:
@@ -45,7 +54,7 @@ def server_loop():
 
     connection, address = server.accept()
 
-    welcome_msg = "Hello {}".format(address[0]).encode(coder)
+    welcome_msg = "Hello {}".format(address[0]).encode(encoding)
     connection.sendall(welcome_msg)
 
     try:
@@ -55,24 +64,28 @@ def server_loop():
                 break
 
             # execute command
-            cmd = received.decode(coder)
+            cmd = received.decode(encoding)
             output = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             # send back the results
             if not output.stdout:
-                data = str(output.returncode).encode(coder)
+                print(output) # debug
+                if output.returncode == 0:
+                    data = "command successfully executed.".encode(encoding)
+                elif output.returncode == 1:
+                    data = "command failed.\n" + output.stderr.decode(encoding)
+                    data = data.encode(encoding)
                 print(data)
             else:
                 data = output.stdout
-                print(data.decode(coder))
+                print(data.decode(encoding))
 
             connection.sendall(data)
-            # data = bytearray() # dont remove yet !
 
     except KeyboardInterrupt:
         print("Interrupted.")
 
     except TypeError as terr:
-        connection.sendall("quit".encode(coder))
+        connection.sendall("stop".encode(encoding))
 
     finally:
         server.close()
@@ -90,18 +103,19 @@ def client_connection():
 
         while True:
             cmd = input("$:").strip()
-            cmd = cmd.encode(coder)
-            if cmd == "quit":
+            if cmd == "stop":  # temporary exit route
+                cmd = cmd.encode(encoding)
                 client.sendall(cmd)
                 data = client.recv(4096)
-                print(data.decode(coder))
-                client.shutdown(3)
+                print(data.decode(encoding))
+                client.shutdown(2)
                 break
             else:
+                cmd = cmd.encode(encoding)
                 client.sendall(cmd)
                 data = client.recv(4096)
-                print("client:", data.decode(coder))
-                if data == "quit":
+                print("server:\n{}".format(data.decode(encoding)))
+                if data == "stop":
                     break
 
     except KeyboardInterrupt as key:
