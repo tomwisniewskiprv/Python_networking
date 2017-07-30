@@ -64,7 +64,7 @@ class ICMP(Structure):
     def __init__(self, socket_buffer, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.types = {0: "Echo Reply", 8: "Echo Request", 3: "Destination Unreachable", 11: "Time Exceeded"}
+        self.types = {0: "Echo Reply", 8: "Echo Request", 3: "Port unreachable error", 11: "Time Exceeded"}
 
-    def show_results(self):
+    def get_description(self):
         return self.types.get(self.type)
