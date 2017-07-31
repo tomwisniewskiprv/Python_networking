@@ -64,7 +64,37 @@ class ICMP(Structure):
     def __init__(self, socket_buffer, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.types = {0: "Echo Reply", 8: "Echo Request", 3: "Port unreachable error", 11: "Time Exceeded"}
+        self.control_messages = {
+            (0, 0): "Echo reply (used to ping)",
+            (1, 0): "Reserved",
+            (2, 0): "Reserved",
+            (3, 0): "Destination Unreachable: Destination network unreachable",
+            (3, 1): "Destination Unreachable: Destination host unreachable",
+            (3, 2): "Destination Unreachable: Destination protocol unreachable",
+            (3, 3): "Destination Unreachable: Destination port unreachable",
+            (3, 4): "Destination Unreachable: Fragmentation required, and DF flag set",
+            (3, 5): "Destination Unreachable: Source route failed",
+            (3, 6): "Destination Unreachable: Destination network unknown",
+            (3, 7): "Destination Unreachable: Destination host unknown",
+            (3, 8): "Destination Unreachable: Source host isolated",
+            (3, 9): "Destination Unreachable: Network administratively prohibited",
+            (3, 10): "Destination Unreachable: Host administratively prohibited",
+            (3, 11): "Destination Unreachable: Network unreachable for ToS",
+            (3, 12): "Destination Unreachable: Host unreachable for ToS",
+            (3, 13): "Destination Unreachable: Communication administratively prohibited",
+            (3, 14): "Destination Unreachable: Host Precedence Violation",
+            (3, 15): "Destination Unreachable: Precedence cutoff in effect",
+            (4, 0): "Source quench (congestion control) deprecated",
+            (11, 0): "Time Exceeded, TTL expired in transit",
+            (11, 1): "Time Exceeded, Fragment reassembly time exceeded",
+        }
 
     def get_description(self):
-        return self.types.get(self.type)
+        """ Translate ICMP.type and ICMP.code for description. """
+        ctrl_msg = self.control_messages.get((self.type, self.code))
+        if ctrl_msg:
+            return ctrl_msg
+        else:
+            return "There is no Control Message description for type {}, code {}" \
+                   "\nHowever there is a response which means that it's up.".format(
+                self.type, self.code)

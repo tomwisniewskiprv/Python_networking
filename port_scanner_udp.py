@@ -7,7 +7,6 @@
     Simple UDP port scanner.
     Notes:
         - add timeout
-        - complete type:code pairs in IPv4 header
 """
 
 import socket
@@ -21,6 +20,7 @@ port = random.randrange(20000) + 20000
 
 
 def create_sender():
+    """ UDP socket sends empty datagram to check if remote host is up """
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         return s
@@ -29,7 +29,7 @@ def create_sender():
 
 
 def create_receiver():
-    """ Raw sockets require admin privileges """
+    """ Raw sockets require admin privileges, receives ICMP packets from scanned host. """
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_IP)
         # include headers in packets
@@ -64,7 +64,7 @@ def run(target):
         print("Remote host ({}) responded:".format(target))
         icmp_data = "{}".format(binascii.hexlify(raw_data).decode("utf-8"))
 
-        print("Raw data: {}\nType: {}\nCode: {}\nDescription: {}".format(icmp_data, packet_icmp_header.type,
+        print("Raw data: {}\nType: {}\nCode: {}\nDescription:\n{}".format(icmp_data, packet_icmp_header.type,
                                                                          packet_icmp_header.code,
                                                                          packet_icmp_header.get_description()))
     else:
