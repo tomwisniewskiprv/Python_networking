@@ -9,7 +9,7 @@ Done:
 * traceroute - (alpha) trace routes to destination using UDP and ICMP response.
 * udp scanner - sends UDP packets and checks if remote machine responds with ICMP.
 * IPv4_Header / ICMP header - ctype structures for network packets.
-
+* XOR cipher - with binary visualisation (for fun :))
 TODO:
 
 *remote shell - (working on this now) execute system commands on remote machine.
