@@ -5,9 +5,6 @@
 # NOTE:
 # I made this script to learn how base64 works, however it should be done on binary level not on chars.
 # Next version will be upgraded.
-#
-# TODO:
-# - add test for decode
 
 
 import unittest
@@ -69,6 +66,9 @@ def decode_b64(text):
     data = list(chunks("".join(data), 8))
     data = [chr(int(i, 2)) for i in data]
 
+    if missing_bytes:
+        data = data[:len(data) - 1]
+
     return "".join(data)
 
 
@@ -99,5 +99,12 @@ class B64_Test(unittest.TestCase):
         self.assertEqual(funct_results, correct_results)
 
     def test_decode(self):
-        # TODO
-        pass
+        text = ["kod", "Pentesty", "Format", "PACKT", "Dlaczego tak?"]  # test cases
+        funct_results = [encode_b64(t) for t in text]
+        correct_results = [base64.b64encode(bytearray(t.encode())) for t in text]
+
+        funct_results = [decode_b64(t) for t in funct_results]
+        correct_results = [base64.b64decode(t) for t in correct_results]
+        correct_results = [result.decode() for result in correct_results]
+
+        self.assertEqual(funct_results, correct_results)
